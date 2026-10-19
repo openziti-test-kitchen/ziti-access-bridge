@@ -1,0 +1,47 @@
+.DS_Store
+
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+/zab
+/bin/
+/build/
+release/
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tools
+*.out
+*.log
+
+# Workspace files, never checked in
+go.work
+go.work.sum
+
+# Editors
+.idea
+.vscode/
+
+# ai agents and review tooling
+.claude
+.mercurius/
+mercurius.yaml
+.mcp.json
+
+# Secrets and local state: Cloudflare Tunnel tokens, OpenZiti identities, enrollment JWTs,
+# the control socket, and the endpoint file
+*.jwt
+*.json
+*.token
+*.key
+*.cert
+*.ca
+*.sock
+endpoints.yml
+etc/proxy.yml
+etc/config.yml
+github_deploy_key

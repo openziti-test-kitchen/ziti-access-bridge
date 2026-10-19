@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>ZAB demo</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0f1115;
+    --panel: #171a21;
+    --panel-edge: #262b36;
+    --text: #e6e8ec;
+    --muted: #9aa3b2;
+    --ok: #3ddc84;
+    --bad: #ff5c5c;
+    --warn: #ffc857;
+    --jwt-header: #ff6b6b;
+    --jwt-payload: #c084fc;
+    --jwt-signature: #60a5fa;
+    --mono: ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
+    --scrollbar-track: #171a21;
+    --scrollbar-thumb: #3a4150;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+    scrollbar-width: thin;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    min-block-size: 100dvh;
+  }
+  main {
+    max-inline-size: 72rem;
+    margin-inline: auto;
+    padding: clamp(1rem, 4vw, 2.5rem);
+    display: grid;
+    gap: 1.5rem;
+  }
+  h1 { margin: 0; font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 600; }
+  h2 { margin: 0 0 .75rem; font-size: 1rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: .75rem;
+    padding: 1.25rem;
+    min-inline-size: 0;
+  }
+  .greeting p { margin: .25rem 0 0; color: var(--muted); }
+  .greeting .now { color: var(--text); font-size: 1.15rem; }
+  .status { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
+  .status li { display: flex; align-items: center; gap: .75rem; }
+  .mark {
+    inline-size: 1.5rem; block-size: 1.5rem; border-radius: 50%;
+    display: grid; place-items: center; font-weight: 700; font-size: .9rem; flex: none;
+  }
+  .mark.ok { background: color-mix(in oklab, var(--ok) 20%, transparent); color: var(--ok); }
+  .mark.bad { background: color-mix(in oklab, var(--bad) 20%, transparent); color: var(--bad); }
+  .mark.warn { background: color-mix(in oklab, var(--warn) 20%, transparent); color: var(--warn); }
+  .error { border-color: color-mix(in oklab, var(--bad) 50%, var(--panel-edge)); }
+  .error h1 { color: var(--bad); }
+  .columns {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
+    gap: 1.5rem;
+  }
+  pre, code { font-family: var(--mono); font-size: .85rem; }
+  pre {
+    margin: 0;
+    padding: 1rem;
+    background: var(--bg);
+    border: 1px solid var(--panel-edge);
+    border-radius: .5rem;
+    overflow: auto;
+    max-inline-size: 100%;
+    scrollbar-gutter: stable;
+  }
+  .token { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .token .h { color: var(--jwt-header); }
+  .token .p { color: var(--jwt-payload); }
+  .token .s { color: var(--jwt-signature); }
+  .token .dot { color: var(--muted); }
+  .legend { display: flex; gap: 1rem; margin-block-start: .75rem; color: var(--muted); font-size: .85rem; }
+  .legend .h { color: var(--jwt-header); }
+  .legend .p { color: var(--jwt-payload); }
+  .legend .s { color: var(--jwt-signature); }
+  .decoded { display: grid; gap: 1rem; }
+  .decoded > div { min-inline-size: 0; }
+  .decoded h3 { margin: 0 0 .5rem; font-size: .9rem; font-weight: 600; }
+  .decoded .h h3 { color: var(--jwt-header); }
+  .decoded .p h3 { color: var(--jwt-payload); }
+  .decoded .s h3 { color: var(--jwt-signature); }
+  .decoded .s p { margin: 0; color: var(--muted); font-size: .9rem; }
+  footer { color: var(--muted); font-size: .85rem; }
+  footer code { color: var(--text); }
+</style>
+</head>
+<body>
+<main>
+{{- if .Error}}
+  <section class="panel error">
+    <h1>Not authenticated</h1>
+    <p>{{.Error}}</p>
+    <ul class="status">
+      <li><span class="mark {{if .Found}}ok{{else}}bad{{end}}">{{if .Found}}&#10003;{{else}}&#10007;{{end}}</span> Cloudflare Access JWT {{if .Found}}found{{else}}not found{{end}}</li>
+      <li><span class="mark bad">&#10007;</span> Cloudflare Access JWT not verified</li>
+    </ul>
+  </section>
+{{- else}}
+  <section class="panel greeting">
+    <h1>Hi {{.Email}}</h1>
+    <p class="now">The time is: <time id="now" datetime="{{.Now}}">{{.NowUTC}}</time></p>
+    <p>This request crossed Cloudflare Access, a Cloudflare Tunnel, ZAB, and OpenZiti to reach <code>{{.Host}}</code>.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Status</h2>
+    <ul class="status">
+      <li><span class="mark ok">&#10003;</span> Cloudflare Access JWT found in <code>Cf-Access-Jwt-Assertion</code></li>
+      {{- if .Verified}}
+      <li><span class="mark ok">&#10003;</span> Cloudflare Access JWT verified against <code>{{.Issuer}}</code></li>
+      {{- else}}
+      <li><span class="mark warn">!</span> Cloudflare Access JWT not verified: this server runs without Cloudflare flags</li>
+      {{- end}}
+    </ul>
+  </section>
+
+  <div class="columns">
+    <section class="panel">
+      <h2>Encoded</h2>
+      <pre class="token"><span class="h">{{.Header}}</span><span class="dot">.</span><span class="p">{{.Payload}}</span><span class="dot">.</span><span class="s">{{.Signature}}</span></pre>
+      <div class="legend"><span class="h">header</span><span class="p">payload</span><span class="s">signature</span></div>
+    </section>
+    <section class="panel">
+      <h2>Decoded</h2>
+      <div class="decoded">
+        <div class="h"><h3>Header</h3><pre>{{.HeaderJSON}}</pre></div>
+        <div class="p"><h3>Payload</h3><pre>{{.PayloadJSON}}</pre></div>
+        <div class="s"><h3>Signature</h3><p>{{.SignatureNote}}</p></div>
+      </div>
+    </section>
+  </div>
+{{- end}}
+  <footer>demo-http-server. JSON echo of this request at <code>/echo</code>.</footer>
+</main>
+<script>
+  const now = document.getElementById('now');
+  if (now) {
+    const when = new Date(now.getAttribute('datetime'));
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    now.textContent = new Intl.DateTimeFormat(undefined, { dateStyle: 'full', timeStyle: 'long', timeZone: zone }).format(when);
+  }
+</script>
+</body>
+</html>

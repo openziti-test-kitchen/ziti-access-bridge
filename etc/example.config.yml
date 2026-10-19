@@ -1,0 +1,43 @@
+identity: # standard identity section
+  # Files that `zab enroll <enrollment.jwt>` writes. Relative paths are relative to this file.
+  key: ./zab.key
+  cert: ./zab.cert
+  ca: ./zab.ca
+
+#zab settings
+# What ZAB learns about the OpenZiti network: the controller addresses first. Enrollment
+# writes it, and every connection keeps it current as controllers are added or removed.
+endpointFile: ./endpoints.yml
+
+# Unix socket a running `zab run` listens on for `zab agent`. Works on Linux and on Windows 10
+# version 1803 and later. Keep the path short: the platform limit is about 100 bytes.
+socketFile: ./zab.sock
+
+cloudflare:
+  # Cloudflare Access team domain. The team JWKS and the JWT issuer derive from it.
+  teamDomain: example.cloudflareaccess.com
+  # AUD tags of the Cloudflare Access applications ZAB accepts requests from.
+  audTags:
+    - 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+  # File holding the Cloudflare Tunnel token. Leave unset to read ZAB_CLOUDFLARE_TUNNEL_TOKEN
+  # from the environment instead.
+  tunnelTokenFile: ./tunnel.token
+
+# Cloudflare Access JWT claim the External JWT Signer maps to an OpenZiti Identity.
+identityClaim: email
+
+pool:
+  # Close a requester's OpenZiti context after this long without a request.
+  idleWindow: 30m
+  # Close a requester's OpenZiti context this long after the newest JWT expiry seen.
+  grace: 5m
+
+# Timeout for each OpenZiti service dial.
+dialTimeout: 10s
+
+metrics:
+  # Listen address for the Prometheus /metrics endpoint. Leave unset to disable it.
+  address: 127.0.0.1:9090
+
+# debug, info, warn, or error.
+logLevel: info
