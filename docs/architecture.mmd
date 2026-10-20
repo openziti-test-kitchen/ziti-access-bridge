@@ -1,0 +1,41 @@
+flowchart LR
+    user([Browser])
+
+    subgraph okta[Okta]
+        idp[OIDC IdP]
+    end
+
+    subgraph cf[Cloudflare]
+        access[Access]
+        edge[Edge]
+    end
+
+    subgraph zabhost[ZAB host]
+        cfd[cloudflared]
+        zab[ziti-access-bridge]
+        zabsdk[Go SDK\nidentity: zab]
+    end
+
+    subgraph fabric[OpenZiti network]
+        ctrl[Controller]
+        router[Edge Router]
+    end
+
+    subgraph apphost[App host]
+        proxy[Proxy SDK\nidentity: proxy]
+        app[HTTP demo app\nlocalhost:18080]
+    end
+
+    user -->|https://time.thisisa.win| access
+    access -->|OIDC login| idp
+    access -->|Access JWT| edge
+    edge -->|Cloudflare Tunnel, QUIC| cfd
+    cfd -->|http://localhost:port| zab
+    zab -->|validate JWT, dial test1| zabsdk
+    zabsdk -->|edge session| router
+    router -->|service test1| proxy
+    proxy -->|tcp| app
+
+    zabsdk -.->|auth, sessions| ctrl
+    proxy -.->|auth, bind| ctrl
+    router -.->|control channel| ctrl

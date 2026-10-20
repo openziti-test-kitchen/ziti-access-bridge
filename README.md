@@ -12,6 +12,11 @@ ZAB's own OpenZiti identity
 trusts and discovers the controllers and administers the ZAB config types. It does not carry
 service traffic.
 
+## Architecture
+
+[![Architecture](docs/architecture.svg)](docs/architecture.svg)
+
+[View Mermaid source](docs/architecture.mmd)
 
 ## Build
 
